@@ -22,3 +22,15 @@ Celeron是Inter的处理器型号
 ---
 ![alt text](/assets/mooc5.png)
 混合式线程是内核级线程和用户级线程的组合
+
+---
+![alt text](/assets/mooc6.png)
+可动态链接的就视为动态重定位, 可静态链接的就视为只能静态重定位
+
+---
+![alt text](/assets/mooc7.png)
+重新执行出现中断的那一条指令
+
+---
+![alt text](/assets/mooc8.png)
+首先是由硬件MMU检测到缺页中断, 操作系统处理该中断时需要从硬盘调入页进入内存, 磁盘是I/O设备
