@@ -63,3 +63,11 @@ Celeron是Inter的处理器型号
 ---
 ![alt text](/assets/mooc14.png)
 通道程序不是在CPU上运行的, 是在通道(I/O处理器)上运行的, 使用的是通道指令
+
+---
+![alt text](/assets/mooc15.png)
+目录项存取的是指向inode节点的指针, 由此在inode表找到对应的inode节点, 再找到对应的数据位置, 且inode本身就叫作索引节点
+
+---
+![alt text](/assets/mooc16.png)
+Hash结构无法直接访问任意位置, 依赖键值对, 且处理冲突也是占用空间的
