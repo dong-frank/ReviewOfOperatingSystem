@@ -238,6 +238,43 @@ coend
 
 
 ## 读者写者问题
+**读者优先**
+```
+semaphore rmutex=1;
+semaphore wmutex=1;
+int read_count=0;
+
+cobegin
+    process read_i(){
+        while(true){
+            P(rmutex);
+            if(read_count ==0){
+                P(wmutex);
+            }
+            read_count++;
+            V(rmutex);
+
+            {read};
+
+            P(rmutex);
+            read_count--;
+            if(read_count == 0){
+                V(wmutex);
+            }
+            V(rmutex);
+        }
+    }
+
+    process write_i(){
+        while(true){
+            P(wmutex);
+            {write};
+            V(wmutex);
+        }
+    }
+
+```
+
 **读写公平的实现**
 
 ```
@@ -279,6 +316,62 @@ cobegin
         }
     }
 
+coend
+```
+
+**写者优先**
+```
+semaphore rmutex=1;
+semaphore wmutex=1;
+semaphore x,y,z=1;
+int read_count=0;
+int write_count=0;
+
+cobegin 
+    process read_i(){
+        while(true){
+            P(z);
+            P(rmutex);
+            P(x);
+            read_count++;
+            if(read_count == 1){
+                P(wmutex);
+            }
+            V(x);
+            V(rmutex);
+            V(z);
+            {read};
+
+            P(x);
+            read_count--;
+            if(read_count == 0){
+                V(wmutex);
+            }
+            V(x);
+        }
+    }
+
+    process write_i(){
+        while(true){
+            P(y);
+            write_count++;
+            if(write_count==1){
+                P(rmutex);
+            }
+            V(y);
+
+            P(wmutex);
+            {write};
+            V(wmutex);
+
+            P(y);
+            write_count--;
+            if(write_count==0){
+                V(rmutex);
+            }
+            V(y);
+        }
+    }
 coend
 ```
 
@@ -441,7 +534,7 @@ coend
 ```
 
 
-## 读木桥问题
+## 独木桥问题
 
 ```
 semaphore bridge=1;
@@ -535,6 +628,121 @@ cobegin
             P(bridge_count);
             {过独木桥};
             V(bridge_count);
+
+            P(west);
+            west_count--;
+            if(west_count==0){
+                V(bridge);
+            }
+            V(west);
+        }
+    }
+
+coend
+```
+
+**限制三辆车一组, 东西方向每组交替过桥**
+```
+semaphore bridge=1;
+semaphore east=1;
+semaphore west=1;
+int east_count=0;
+int west_count=0;
+int east_group=0;
+int west_group=0;
+
+cobegin
+
+    process east(){
+        while(true){
+            P(east);
+            east_count++;
+            if(east_count==1 && east_group==0){
+                P(bridge);
+            }
+            V(east);
+            {过独木桥};
+
+            P(east);
+            east_count--;
+            east_group++;
+            if(east_count==0 && east_group==3){
+                east_group=0;
+                V(bridge);
+            }
+            V(east);
+        }
+    }
+
+    process west(){
+        while(true){
+            P(west);
+            west_count++;
+            if(west_count==1 && west_group==0){
+                P(bridge);
+            }
+            V(west);
+            {过独木桥};
+
+            P(west);
+            west_count--;
+            west_group++;
+            if(west_count==0 && west_group == 3){
+                west_group=0;
+                V(bridge);
+            }
+            V(west);
+        }
+    }
+
+coend
+```
+
+
+**当另一方提出过桥请求时能阻止正在过桥的这一方向**
+
+```
+semaphore bridge=1;
+semaphore east=1;
+semaphore west=1;
+semaphore stop=1;
+int east_count=0;
+int west_count=0;
+
+cobegin
+
+    process east(){
+        while(true){
+            P(stop);
+            P(east);
+            east_count++;
+            if(east_count==1){
+                P(bridge);
+            }
+            V(east);
+            V(stop);
+            {过独木桥};
+
+            P(east);
+            east_count--;
+            if(east_count==0){
+                V(bridge);
+            }
+            V(east);
+        }
+    }
+
+    process west(){
+        while(true){
+            P(stop);
+            P(west);
+            west_count++;
+            if(west_count==1){
+                P(bridge);
+            }
+            V(west);
+            V(stop);
+            {过独木桥};
 
             P(west);
             west_count--;
