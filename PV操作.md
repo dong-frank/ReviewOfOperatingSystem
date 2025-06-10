@@ -208,3 +208,342 @@ cobegin:
 coend;
 
 ```
+
+## 哲学家就餐问题
+
+```
+semaphore fork[5];
+semaphore room = 4;
+for(int i=0; i<5; i++){
+    fork[i]=1;
+}
+
+cobegin
+
+    process philosopher_i(){
+        while(true){
+            thinking();
+            P(room);
+            P(fork[i]);
+            P(fork[(i+1) % 5]);
+            eating();
+            V(for[(i+1) % 5]);
+            V(fork[i]);
+            V(room);
+        }
+    }
+
+coend
+```
+
+
+## 读者写者问题
+**读写公平的实现**
+
+```
+semaphore rmutex=1;
+semaphore wmutex=1;
+semaphore mutex=1;
+int read_count=0;
+
+cobegin
+    process read_i(){
+        while(true){
+            P(mutex);
+            P(rmutex);
+            if(read_count == 0){
+                P(wmutex);
+            }
+            read_count++;
+            V(rmutex);
+            V(mutex);
+
+            {read};
+
+            P(rmutex);
+            read_count--;
+            if(read_count == 0){
+                V(wmutex);
+            }
+            V(rmutex);
+        }
+    }
+
+    process write_i(){
+        while(true){
+            P(mutex);
+            P(wmutex);
+            {write};
+            V(wmutex);
+            V(mutex);
+        }
+    }
+
+coend
+```
+
+## 睡眠的理发师问题
+
+```
+int waiting_customers=0;
+int CHAIRS = N;
+semaphore barber=0;
+semaphore customer=0;
+semaphote mutex=1;
+
+cobegin
+    process customer_i(){
+        P(mutex);
+        if(waiting_customers < CHAIRS){
+            waiting_customers++;
+            V(customer);
+            V(mutex);
+            P(barber);
+            {get_hair_cut};
+        }else{
+            V(mutex);
+        }
+    }
+
+    process barber(){
+        while(true){
+            P(customer);
+            P(mutex);
+            waiting_customers--;
+            V(barber);
+            V(mutex);
+            {cut_hair};
+        }
+    }
+
+coend
+
+```
+
+## 农夫猎人问题
+
+```
+semaphore cage=1;
+semaphore tiger=0;
+semaphore sheep=0;
+
+cobegin
+
+    process farmer(){
+        while(true){
+            P(cage);
+            {put_sheep};
+            V(sheep);
+        }
+    }
+
+    process hunter(){
+        while(true){
+            P(cage);
+            {put_tiger};
+            V(tiger);
+        }
+    }
+
+    process restaurant(){
+        while(true){
+            P(sheep);
+            {get_sheep};
+            V(cage);
+        }
+    }
+
+    process zoo(){
+        while(true){
+            P(tiger);
+            {get_tiger};
+            V(cage);
+        }
+    }
+
+coend
+
+```
+
+## 银行业务问题
+
+```
+semaphore customer=0;
+semaphore server=0;
+semaphore mutex=1;
+
+cobegin
+    process customer_i(){
+        {get_number};
+        P(mutex);
+        {find_wait_seat};
+        V(mutex);
+        V(customer);
+        P(server);
+    }
+
+    process server_i(){
+        while(true){
+            P(customer);
+            P(mutex);
+            {customer_leave_wait};
+            V(mutex);
+            {server_the_customer};
+            V(server);
+        }
+    }
+coend
+
+```
+
+## 吸烟者问题
+
+```
+semaphore put=1;
+semaphore get[3];
+for(int i=0; i<3; i++){
+    get[i] = 0;
+}
+
+cobegin
+
+    process server(){
+        while(true){
+            P(put);
+            int i=0;
+            int j=0;
+            while(i == j){
+                i = Rand() %3;
+                j = Rand() %3;
+            }
+
+            if((i==0 && j==1) || (i==1 && j==0)){
+                {put_items};
+                V(get[2]);
+            }else if((i==0 && j==2) || (i==2 && j==0)){
+                {put_items};
+                V(get[1]);
+            }else{
+                {put_items};
+                V(get[0]);
+            }
+
+        }
+    }
+
+    process smoker_i(){
+        P(get[i]);
+        {get_items};
+        {smoke};
+        V(put);
+    }
+coend
+```
+
+
+## 读木桥问题
+
+```
+semaphore bridge=1;
+semaphore east=1;
+semaphore west=1;
+int east_count=0;
+int west_count=0;
+
+cobegin
+
+    process east(){
+        while(true){
+            P(east);
+            east_count++;
+            if(east_count==1){
+                P(bridge);
+            }
+            V(east);
+            {过独木桥};
+
+            P(east);
+            east_count--;
+            if(east_count==0){
+                V(bridge);
+            }
+            V(east);
+        }
+    }
+
+    process west(){
+        while(true){
+            P(west);
+            west_count++;
+            if(west_count==1){
+                P(bridge);
+            }
+            V(west);
+            {过独木桥};
+
+            P(west);
+            west_count--;
+            if(west_count==0){
+                V(bridge);
+            }
+            V(west);
+        }
+    }
+
+coend
+```
+
+**限制桥上最多有k两车, 那么{过独木桥}要变为临界区**
+```
+semaphore bridge=1;
+semaphore bridge_count=k;
+semaphore east=1;
+semaphore west=1;
+int east_count=0;
+int west_count=0;
+
+cobegin
+
+    process east(){
+        while(true){
+            P(east);
+            east_count++;
+            if(east_count==1){
+                P(bridge);
+            }
+            V(east);
+            P(bridge_count);
+            {过独木桥};
+            V(bridge_count);
+            P(east);
+            east_count--;
+            if(east_count==0){
+                V(bridge);
+            }
+            V(east);
+        }
+    }
+
+    process west(){
+        while(true){
+            P(west);
+            west_count++;
+            if(west_count==1){
+                P(bridge);
+            }
+            V(west);
+            P(bridge_count);
+            {过独木桥};
+            V(bridge_count);
+
+            P(west);
+            west_count--;
+            if(west_count==0){
+                V(bridge);
+            }
+            V(west);
+        }
+    }
+
+coend
+```
